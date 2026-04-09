@@ -21,6 +21,16 @@ pipeline {
             defaultValue: '8080',
             description: 'Local port used for the smoke test container'
         )
+        string(
+            name: 'DEPLOY_CONTAINER_NAME',
+            defaultValue: 'frontend-app',
+            description: 'Container name to recreate on each pipeline run'
+        )
+        string(
+            name: 'DEPLOY_PORT',
+            defaultValue: '8080',
+            description: 'Host port mapped to container port 80 for recreated container'
+        )
     }
 
     stages {
@@ -43,9 +53,21 @@ pipeline {
                         env.EFFECTIVE_SMOKE_TEST_PORT = '8080'
                     }
 
+                    env.EFFECTIVE_DEPLOY_CONTAINER_NAME = (params.DEPLOY_CONTAINER_NAME ?: '').trim()
+                    if (!env.EFFECTIVE_DEPLOY_CONTAINER_NAME) {
+                        env.EFFECTIVE_DEPLOY_CONTAINER_NAME = 'frontend-app'
+                    }
+
+                    env.EFFECTIVE_DEPLOY_PORT = (params.DEPLOY_PORT ?: '').trim()
+                    if (!env.EFFECTIVE_DEPLOY_PORT) {
+                        env.EFFECTIVE_DEPLOY_PORT = '8080'
+                    }
+
                     echo "[CI] Effective VITE_API_URL: ${env.EFFECTIVE_VITE_API_URL}"
                     echo "[CI] Effective DOCKER_IMAGE: ${env.EFFECTIVE_DOCKER_IMAGE}"
                     echo "[CI] Effective SMOKE_TEST_PORT: ${env.EFFECTIVE_SMOKE_TEST_PORT}"
+                    echo "[CI] Effective DEPLOY_CONTAINER_NAME: ${env.EFFECTIVE_DEPLOY_CONTAINER_NAME}"
+                    echo "[CI] Effective DEPLOY_PORT: ${env.EFFECTIVE_DEPLOY_PORT}"
                 }
             }
         }
@@ -97,6 +119,26 @@ pipeline {
                         sh 'docker build --build-arg VITE_API_URL="$EFFECTIVE_VITE_API_URL" -t "$EFFECTIVE_DOCKER_IMAGE" .'
                     } else {
                         bat 'docker build --build-arg VITE_API_URL=%EFFECTIVE_VITE_API_URL% -t %EFFECTIVE_DOCKER_IMAGE% .'
+                    }
+                }
+            }
+        }
+
+        stage('Recreate Docker container') {
+            steps {
+                echo '[CI] Stage: Recreate Docker container - removing old container and starting a new one'
+                script {
+                    if (isUnix()) {
+                        sh '''
+                            docker rm -f ${EFFECTIVE_DEPLOY_CONTAINER_NAME} >/dev/null 2>&1 || true
+                            docker run -d --restart unless-stopped --name ${EFFECTIVE_DEPLOY_CONTAINER_NAME} -p ${EFFECTIVE_DEPLOY_PORT}:80 ${EFFECTIVE_DOCKER_IMAGE}
+                        '''
+                    } else {
+                        bat '''
+                            docker rm -f %EFFECTIVE_DEPLOY_CONTAINER_NAME% >NUL 2>&1
+                            docker run -d --restart unless-stopped --name %EFFECTIVE_DEPLOY_CONTAINER_NAME% -p %EFFECTIVE_DEPLOY_PORT%:80 %EFFECTIVE_DOCKER_IMAGE%
+                            if errorlevel 1 exit /b 1
+                        '''
                     }
                 }
             }

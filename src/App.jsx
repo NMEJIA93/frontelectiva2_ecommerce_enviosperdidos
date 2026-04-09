@@ -38,7 +38,7 @@ function App() {
       />
 
       <footer className="bg-light text-center py-3 mt-5">
-        <p className="mb-0">© 2025 Mi E-commerce. Todos los derechos reservados.</p>
+        <p className="mb-0">© 2026 Mi E-commerce. Todos los derechos reservados.</p>
       </footer>
     </Router>
   );

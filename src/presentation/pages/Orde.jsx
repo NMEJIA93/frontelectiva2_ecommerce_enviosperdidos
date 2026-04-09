@@ -24,7 +24,7 @@ const OrdersPage = () => {
     }
     setUser(userData);
     cargarOrdenes(userData.id);
-  }, []);
+  }, [navigate]);
 
   const cargarOrdenes = async (userId) => {
     try {

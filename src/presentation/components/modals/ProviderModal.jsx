@@ -18,7 +18,7 @@ const ModalProvider = ({ show, onClose }) => {
           setMensaje("Error al cargar proveedores");
         });
     }
-  }, [show]);
+  }, [show, token]);
 
   const handleGuardar = async () => {
     if (!nombre.trim()) {

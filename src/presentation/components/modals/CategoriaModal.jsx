@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { createCategory } from "../../../services/CategoryService";
+import { createCategory } from "../../../services/categoryservice";
 import "../../../styles/CategoriaModal.css"; 
 
 const CategoriaModal = ({ show, onClose }) => {

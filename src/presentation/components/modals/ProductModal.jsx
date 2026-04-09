@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { findSuppliers } from "../../../services/providerService";
 import { createProduct } from "../../../services/productService";
 import { tokenService } from "../../../utils/tokenService";
-import { findCategory } from "../../../services/CategoryService";
+import { findCategory } from "../../../services/categoryservice";
 import "../../../styles/CategoriaModal.css"; // 👈 Reutiliza el mismo estilo minimalista
 
 const ProductModal = ({ show, onClose }) => {
@@ -31,7 +31,7 @@ const ProductModal = ({ show, onClose }) => {
           setMensaje("Error cargando categorías o proveedores");
         });
     }
-  }, [show]);
+  }, [show, token]);
 
   const handleChange = (e) => {
     setProducto({ ...producto, [e.target.name]: e.target.value });

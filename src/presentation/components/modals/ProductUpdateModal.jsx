@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { findSuppliers } from "../../../services/providerService";
-import { findCategory } from "../../../services/CategoryService";
+import { findCategory } from "../../../services/categoryservice";
 import { updateProduct, findProducts } from "../../../services/productService";
 import { tokenService } from "../../../utils/tokenService";
 import "../../../styles/CategoriaModal.css"; 
@@ -29,7 +29,7 @@ const ProductUpdateModal = ({ show, onClose }) => {
           setMensaje("Error cargando productos, categorías o proveedores");
         });
     }
-  }, [show]);
+  }, [show, token]);
 
   const handleSelectChange = (e) => {
     const productoId = e.target.value;

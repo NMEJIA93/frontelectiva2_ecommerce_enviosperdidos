@@ -28,7 +28,7 @@ pipeline {
         )
         string(
             name: 'DEPLOY_PORT',
-            defaultValue: '8080',
+            defaultValue: '8081',
             description: 'Host port mapped to container port 80 for recreated container'
         )
     }
@@ -60,7 +60,7 @@ pipeline {
 
                     env.EFFECTIVE_DEPLOY_PORT = (params.DEPLOY_PORT ?: '').trim()
                     if (!env.EFFECTIVE_DEPLOY_PORT) {
-                        env.EFFECTIVE_DEPLOY_PORT = '8080'
+                        env.EFFECTIVE_DEPLOY_PORT = '8081'
                     }
 
                     echo "[CI] Effective VITE_API_URL: ${env.EFFECTIVE_VITE_API_URL}"
@@ -193,6 +193,7 @@ pipeline {
                         error('[CI] Deploy container started but mapped host port could not be resolved')
                     }
                     echo "[CI] Deploy container '${env.EFFECTIVE_DEPLOY_CONTAINER_NAME}' running on host port ${env.EFFECTIVE_DEPLOYED_PORT}"
+                    echo "[CI] Frontend URL (same Jenkins host): http://localhost:${env.EFFECTIVE_DEPLOYED_PORT}"
                 }
             }
         }

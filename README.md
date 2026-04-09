@@ -96,6 +96,7 @@ Ejemplo de archivo `.env`:
     VITE_API_URL=https://tudominio.com/api
     VITE_ENV=development
 
+
 Estas variables permiten desacoplar la configuración del código y
 adaptar fácilmente el frontend a distintos ambientes (desarrollo,
 pruebas o producción).

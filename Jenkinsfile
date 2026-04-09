@@ -124,6 +124,19 @@ pipeline {
             }
         }
 
+        stage('Ensure dependencies before deploy') {
+            steps {
+                echo '[CI] Stage: Ensure dependencies before deploy - validating workspace dependencies'
+                script {
+                    if (isUnix()) {
+                        sh '[ -d node_modules ] || npm ci'
+                    } else {
+                        bat 'if not exist node_modules (npm ci)'
+                    }
+                }
+            }
+        }
+
         stage('Recreate Docker container') {
             steps {
                 echo '[CI] Stage: Recreate Docker container - removing old container and starting a new one'

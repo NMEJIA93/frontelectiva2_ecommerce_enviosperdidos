@@ -142,17 +142,57 @@ pipeline {
                 echo '[CI] Stage: Recreate Docker container - removing old container and starting a new one'
                 script {
                     if (isUnix()) {
-                        sh '''
-                            docker rm -f ${EFFECTIVE_DEPLOY_CONTAINER_NAME} >/dev/null 2>&1 || true
-                            docker run -d --restart unless-stopped --name ${EFFECTIVE_DEPLOY_CONTAINER_NAME} -p ${EFFECTIVE_DEPLOY_PORT}:80 ${EFFECTIVE_DOCKER_IMAGE}
-                        '''
+                        sh 'docker rm -f ${EFFECTIVE_DEPLOY_CONTAINER_NAME} >/dev/null 2>&1 || true'
+
+                        def preferredRunStatus = sh(
+                            script: 'docker run -d --restart unless-stopped --name ${EFFECTIVE_DEPLOY_CONTAINER_NAME} -p ${EFFECTIVE_DEPLOY_PORT}:80 ${EFFECTIVE_DOCKER_IMAGE}',
+                            returnStatus: true
+                        )
+
+                        if (preferredRunStatus != 0) {
+                            echo "[CI] Preferred deploy port ${env.EFFECTIVE_DEPLOY_PORT} is busy. Falling back to a dynamic host port."
+                            def fallbackRunStatus = sh(
+                                script: 'docker run -d --restart unless-stopped --name ${EFFECTIVE_DEPLOY_CONTAINER_NAME} -p 0:80 ${EFFECTIVE_DOCKER_IMAGE}',
+                                returnStatus: true
+                            )
+                            if (fallbackRunStatus != 0) {
+                                error('[CI] Could not start deploy container using preferred or dynamic port')
+                            }
+                        }
+
+                        env.EFFECTIVE_DEPLOYED_PORT = sh(
+                            script: "docker port ${env.EFFECTIVE_DEPLOY_CONTAINER_NAME} 80/tcp | awk -F: '{print \\$NF}' | tail -n 1",
+                            returnStdout: true
+                        ).trim()
                     } else {
-                        bat '''
-                            docker rm -f %EFFECTIVE_DEPLOY_CONTAINER_NAME% >NUL 2>&1
-                            docker run -d --restart unless-stopped --name %EFFECTIVE_DEPLOY_CONTAINER_NAME% -p %EFFECTIVE_DEPLOY_PORT%:80 %EFFECTIVE_DOCKER_IMAGE%
-                            if errorlevel 1 exit /b 1
-                        '''
+                        bat 'docker rm -f %EFFECTIVE_DEPLOY_CONTAINER_NAME% >NUL 2>&1'
+
+                        def preferredRunStatus = bat(
+                            script: 'docker run -d --restart unless-stopped --name %EFFECTIVE_DEPLOY_CONTAINER_NAME% -p %EFFECTIVE_DEPLOY_PORT%:80 %EFFECTIVE_DOCKER_IMAGE%',
+                            returnStatus: true
+                        )
+
+                        if (preferredRunStatus != 0) {
+                            echo "[CI] Preferred deploy port ${env.EFFECTIVE_DEPLOY_PORT} is busy. Falling back to a dynamic host port."
+                            def fallbackRunStatus = bat(
+                                script: 'docker run -d --restart unless-stopped --name %EFFECTIVE_DEPLOY_CONTAINER_NAME% -p 0:80 %EFFECTIVE_DOCKER_IMAGE%',
+                                returnStatus: true
+                            )
+                            if (fallbackRunStatus != 0) {
+                                error('[CI] Could not start deploy container using preferred or dynamic port')
+                            }
+                        }
+
+                        env.EFFECTIVE_DEPLOYED_PORT = bat(
+                            script: 'powershell -NoProfile -Command "$m = docker port %EFFECTIVE_DEPLOY_CONTAINER_NAME% 80/tcp | Select-Object -First 1; if (-not $m) { exit 1 }; ($m.Split([char]58)[-1]).Trim()"',
+                            returnStdout: true
+                        ).trim()
                     }
+
+                    if (!env.EFFECTIVE_DEPLOYED_PORT) {
+                        error('[CI] Deploy container started but mapped host port could not be resolved')
+                    }
+                    echo "[CI] Deploy container '${env.EFFECTIVE_DEPLOY_CONTAINER_NAME}' running on host port ${env.EFFECTIVE_DEPLOYED_PORT}"
                 }
             }
         }

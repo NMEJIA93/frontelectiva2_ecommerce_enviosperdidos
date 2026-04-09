@@ -151,11 +151,13 @@ pipeline {
 
                         if (preferredRunStatus != 0) {
                             echo "[CI] Preferred deploy port ${env.EFFECTIVE_DEPLOY_PORT} is busy. Falling back to a dynamic host port."
+                            sh 'docker rm -f ${EFFECTIVE_DEPLOY_CONTAINER_NAME} >/dev/null 2>&1 || true'
                             def fallbackRunStatus = sh(
                                 script: 'docker run -d --restart unless-stopped --name ${EFFECTIVE_DEPLOY_CONTAINER_NAME} -p 0:80 ${EFFECTIVE_DOCKER_IMAGE}',
                                 returnStatus: true
                             )
                             if (fallbackRunStatus != 0) {
+                                sh 'docker ps -a --filter "name=${EFFECTIVE_DEPLOY_CONTAINER_NAME}" || true'
                                 error('[CI] Could not start deploy container using preferred or dynamic port')
                             }
                         }
@@ -174,11 +176,13 @@ pipeline {
 
                         if (preferredRunStatus != 0) {
                             echo "[CI] Preferred deploy port ${env.EFFECTIVE_DEPLOY_PORT} is busy. Falling back to a dynamic host port."
+                            bat 'docker rm -f %EFFECTIVE_DEPLOY_CONTAINER_NAME% >NUL 2>&1'
                             def fallbackRunStatus = bat(
                                 script: 'docker run -d --restart unless-stopped --name %EFFECTIVE_DEPLOY_CONTAINER_NAME% -p 0:80 %EFFECTIVE_DOCKER_IMAGE%',
                                 returnStatus: true
                             )
                             if (fallbackRunStatus != 0) {
+                                bat 'docker ps -a --filter "name=%EFFECTIVE_DEPLOY_CONTAINER_NAME%"'
                                 error('[CI] Could not start deploy container using preferred or dynamic port')
                             }
                         }

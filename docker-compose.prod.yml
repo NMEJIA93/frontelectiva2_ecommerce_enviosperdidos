@@ -1,0 +1,26 @@
+services:
+  # Production-like service - build optimizado con Nginx
+  frontend-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api}
+    container_name: frontendecommerce-prod
+    ports:
+      - "${PROD_PORT:-8080}:80"
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000/api}
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+networks:
+  ecommerce-network:
+    driver: bridge

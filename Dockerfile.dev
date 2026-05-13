@@ -1,0 +1,28 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Instalar supervisores y utilidades útiles para desarrollo
+RUN apk add --no-cache \
+    curl \
+    wget \
+    bash
+
+# Copiar package files
+COPY package*.json ./
+
+# Instalar dependencias (sin cache para desarrollo)
+RUN npm install
+
+# Copiar todo el código fuente
+COPY . .
+
+# Exponer el puerto de Vite
+EXPOSE 5173
+
+# Variables de entorno
+ARG VITE_API_URL=http://localhost:3000/api
+ENV VITE_API_URL=${VITE_API_URL}
+
+# Comando por defecto - ejecutar dev server
+CMD ["npm", "run", "dev", "--", "--host"]

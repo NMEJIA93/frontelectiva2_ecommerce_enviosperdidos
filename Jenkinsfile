@@ -31,9 +31,27 @@ pipeline {
             defaultValue: '8081',
             description: 'Host port mapped to container port 80 for recreated container'
         )
+        booleanParam(
+            name: 'TERRAFORM_APPLY',
+            defaultValue: false,
+            description: 'If true the pipeline will run terraform apply after plan'
+        )
     }
 
     stages {
+        stage('Terraform: Cleanup (destroy existing)') {
+            steps {
+                echo '[CI] Stage: Terraform cleanup - removing previous resources if they exist'
+                script {
+                    if (isUnix()) {
+                        sh 'cd terraform && terraform init -input=false && terraform destroy -auto-approve || true'
+                    } else {
+                        bat 'cd terraform && terraform init -input=false && terraform destroy -auto-approve || exit /b 0'
+                    }
+                }
+            }
+        }
+
         stage('Resolve CI parameters') {
             steps {
                 script {
@@ -119,6 +137,60 @@ pipeline {
                         sh 'docker build --build-arg VITE_API_URL="$EFFECTIVE_VITE_API_URL" -t "$EFFECTIVE_DOCKER_IMAGE" .'
                     } else {
                         bat 'docker build --build-arg VITE_API_URL=%EFFECTIVE_VITE_API_URL% -t %EFFECTIVE_DOCKER_IMAGE% .'
+                    }
+                }
+            }
+        }
+
+        stage('Terraform: Init & Validate') {
+            steps {
+                echo '[CI] Stage: Terraform init & validate'
+                script {
+                    if (isUnix()) {
+                        sh 'cd terraform && terraform init -input=false'
+                        sh 'cd terraform && terraform validate'
+                    } else {
+                        bat 'cd terraform && terraform init -input=false'
+                        bat 'cd terraform && terraform validate'
+                    }
+                }
+            }
+        }
+
+        stage('Terraform: Plan') {
+            steps {
+                echo '[CI] Stage: Terraform plan'
+                script {
+                    // split EFFECTIVE_DOCKER_IMAGE into name and tag if provided
+                    def img = env.EFFECTIVE_DOCKER_IMAGE
+                    def imgName = img
+                    def imgTag = 'local'
+                    if (img?.contains(':')) {
+                        def parts = img.split(':')
+                        imgName = parts[0]
+                        imgTag = parts[1]
+                    }
+
+                    if (isUnix()) {
+                        sh "cd terraform && terraform plan -out=tfplan -input=false -var \"vite_api_url=${env.EFFECTIVE_VITE_API_URL}\" -var \"image_name=${imgName}\" -var \"image_tag=${imgTag}\" -var \"host_port=${env.EFFECTIVE_DEPLOY_PORT}\""
+                    } else {
+                        bat "cd terraform && terraform plan -out=tfplan -input=false -var \"vite_api_url=%EFFECTIVE_VITE_API_URL%\" -var \"image_name=${imgName}\" -var \"image_tag=${imgTag}\" -var \"host_port=%EFFECTIVE_DEPLOY_PORT%\""
+                    }
+                }
+            }
+        }
+
+        stage('Terraform: Apply (optional)') {
+            when {
+                expression { return params.TERRAFORM_APPLY == true }
+            }
+            steps {
+                echo '[CI] Stage: Terraform apply (automatic)'
+                script {
+                    if (isUnix()) {
+                        sh 'cd terraform && terraform apply -input=false -auto-approve tfplan'
+                    } else {
+                        bat 'cd terraform && terraform apply -input=false -auto-approve tfplan'
                     }
                 }
             }

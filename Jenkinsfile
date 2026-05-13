@@ -34,8 +34,8 @@ pipeline {
         )
         booleanParam(
             name: 'TERRAFORM_APPLY',
-            defaultValue: false,
-            description: 'If true the pipeline will run terraform apply after plan'
+            defaultValue: true,
+            description: 'If true the pipeline will run terraform apply after plan (recommended)'
         )
     }
 
@@ -256,9 +256,6 @@ pipeline {
                             returnStdout: true
                         ).trim()
                     } else {
-                        bat '''
-                            for /f %%i in ('docker ps -q --filter "publish=%EFFECTIVE_DEPLOY_PORT%"') do docker rm -f %%i >NUL 2>&1
-                        '''
                         bat 'docker rm -f %EFFECTIVE_DEPLOY_CONTAINER_NAME% >NUL 2>&1'
 
                         def preferredRunStatus = bat(

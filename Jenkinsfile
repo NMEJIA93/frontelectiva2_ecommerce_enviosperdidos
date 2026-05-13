@@ -256,7 +256,9 @@ pipeline {
                             returnStdout: true
                         ).trim()
                     } else {
-                        bat 'powershell -NoProfile -Command "$ids = docker ps --filter \"publish=%EFFECTIVE_DEPLOY_PORT%\" --format \"{{.ID}}\"; if ($ids) { foreach ($id in $ids) { docker rm -f $id | Out-Null } }"'
+                        bat '''
+                            for /f %%i in ('docker ps -q --filter "publish=%EFFECTIVE_DEPLOY_PORT%"') do docker rm -f %%i >NUL 2>&1
+                        '''
                         bat 'docker rm -f %EFFECTIVE_DEPLOY_CONTAINER_NAME% >NUL 2>&1'
 
                         def preferredRunStatus = bat(

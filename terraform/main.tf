@@ -92,7 +92,7 @@ resource "docker_image" "app" {
 
 resource "docker_container" "app" {
   name  = "${var.image_name}-local"
-  image = "${var.image_name}:${var.image_tag}"
+  image = docker_image.app.image_id
 
   ports {
     internal = 80

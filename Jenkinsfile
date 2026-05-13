@@ -32,11 +32,6 @@ pipeline {
             defaultValue: '8081',
             description: 'Host port mapped to container port 80 for recreated container'
         )
-        booleanParam(
-            name: 'TERRAFORM_APPLY',
-            defaultValue: true,
-            description: 'If true the pipeline will run terraform apply after plan (recommended)'
-        )
     }
 
     stages {
@@ -45,9 +40,9 @@ pipeline {
                 echo '[CI] Stage: Terraform cleanup - removing previous resources if they exist'
                 script {
                     if (isUnix()) {
-                        sh 'cd terraform && terraform init -input=false && terraform destroy -auto-approve || true'
+                        sh 'docker rm -f frontend-app >/dev/null 2>&1 || true; cd terraform && terraform init -input=false && terraform destroy -auto-approve || true'
                     } else {
-                        bat 'cd terraform && terraform init -input=false && terraform destroy -auto-approve || exit /b 0'
+                        bat 'docker rm -f frontend-app >NUL 2>&1 & cd terraform && terraform init -input=false && terraform destroy -auto-approve || exit /b 0'
                     }
                 }
             }
@@ -194,10 +189,7 @@ pipeline {
             }
         }
 
-        stage('Terraform: Apply (optional)') {
-            when {
-                expression { return params.TERRAFORM_APPLY == true }
-            }
+        stage('Terraform: Apply') {
             steps {
                 echo '[CI] Stage: Terraform apply (automatic)'
                 script {
@@ -213,12 +205,8 @@ pipeline {
         stage('Deployment mode') {
             steps {
                 script {
-                    env.USE_TERRAFORM_DEPLOY = params.TERRAFORM_APPLY ? 'true' : 'false'
-                    if (env.USE_TERRAFORM_DEPLOY == 'true') {
-                        echo '[CI] Deployment mode: Terraform apply is enabled. Manual docker run stage will be skipped.'
-                    } else {
-                        echo '[CI] Deployment mode: Terraform apply is disabled. Manual docker run stage will deploy container.'
-                    }
+                    env.USE_TERRAFORM_DEPLOY = 'true'
+                    echo '[CI] Deployment mode: Terraform-managed deployment enabled. Manual docker run stage will be skipped.'
                 }
             }
         }

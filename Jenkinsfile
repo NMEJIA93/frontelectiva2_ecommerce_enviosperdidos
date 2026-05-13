@@ -117,6 +117,19 @@ pipeline {
             }
         }
 
+        stage('Test (optional)') {
+            steps {
+                echo '[CI] Stage: Test - running npm test if script exists'
+                script {
+                    if (isUnix()) {
+                        sh 'npm run test --if-present'
+                    } else {
+                        bat 'npm run test --if-present'
+                    }
+                }
+            }
+        }
+
         stage('Build app') {
             steps {
                 echo '[CI] Stage: Build app - generating Vite production bundle'

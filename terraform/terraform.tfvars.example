@@ -1,0 +1,53 @@
+# Example Terraform Variables File
+# Copy this file to terraform.tfvars and customize for your environment
+
+### AWS Configuration
+aws_region = "us-east-1"
+
+### Project Configuration
+project_name = "frontendecommerce"
+environment  = "dev"
+app_name     = "frontend"
+
+### Frontend Application Configuration
+container_port   = 80
+vite_api_url     = "http://localhost:3000/api"
+container_image_tag = "latest"
+
+### ECS Fargate Configuration
+ecs_task_cpu      = 512
+ecs_task_memory   = 1024
+ecs_desired_count = 2
+
+### Load Balancer Configuration
+enable_alb = true
+alb_target_group_health_check_path     = "/"
+alb_target_group_health_check_interval = 30
+alb_target_group_health_check_timeout  = 5
+alb_target_group_healthy_threshold     = 2
+alb_target_group_unhealthy_threshold   = 3
+
+### CloudFront Configuration (Optional)
+enable_cloudfront = false
+# cloudfront_aliases = ["example.com", "www.example.com"]
+
+### Route53 Configuration (Optional)
+route53_zone_id      = ""
+route53_domain_name  = ""
+
+### Logging Configuration
+enable_logging      = true
+log_retention_days  = 7
+
+### Auto-scaling Configuration
+enable_autoscaling                = false
+autoscaling_min_capacity          = 1
+autoscaling_max_capacity          = 4
+autoscaling_target_cpu_utilization = 70
+
+### Additional Tags
+additional_tags = {
+  Owner      = "Team"
+  CostCenter = "Engineering"
+  Backup     = "daily"
+}

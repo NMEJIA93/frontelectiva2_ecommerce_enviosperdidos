@@ -1,10 +1,8 @@
 ################################################################################
-# Terraform Configuration - Frontend E-commerce (Consolidated)
+# Terraform Configuration - Frontend E-commerce (Docker Local)
 # 
-# This file contains all Terraform configuration in a single file for simplicity.
-# Can be split into separate files later for better organization.
+# Minimal consolidated config for local development using Docker provider.
 #
-# Providers: AWS
 # Version: 1.14.9+ recommended
 ################################################################################
 

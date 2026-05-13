@@ -3,6 +3,7 @@ pipeline {
 
     options {
         timestamps()
+        disableConcurrentBuilds()
     }
 
     parameters {
@@ -196,6 +197,19 @@ pipeline {
             }
         }
 
+        stage('Deployment mode') {
+            steps {
+                script {
+                    env.USE_TERRAFORM_DEPLOY = params.TERRAFORM_APPLY ? 'true' : 'false'
+                    if (env.USE_TERRAFORM_DEPLOY == 'true') {
+                        echo '[CI] Deployment mode: Terraform apply is enabled. Manual docker run stage will be skipped.'
+                    } else {
+                        echo '[CI] Deployment mode: Terraform apply is disabled. Manual docker run stage will deploy container.'
+                    }
+                }
+            }
+        }
+
         stage('Ensure dependencies before deploy') {
             steps {
                 echo '[CI] Stage: Ensure dependencies before deploy - validating workspace dependencies'
@@ -210,6 +224,9 @@ pipeline {
         }
 
         stage('Recreate Docker container') {
+            when {
+                expression { return env.USE_TERRAFORM_DEPLOY != 'true' }
+            }
             steps {
                 echo '[CI] Stage: Recreate Docker container - removing old container and starting a new one'
                 script {
@@ -239,6 +256,7 @@ pipeline {
                             returnStdout: true
                         ).trim()
                     } else {
+                        bat 'powershell -NoProfile -Command "$ids = docker ps --filter \"publish=%EFFECTIVE_DEPLOY_PORT%\" --format \"{{.ID}}\"; if ($ids) { foreach ($id in $ids) { docker rm -f $id | Out-Null } }"'
                         bat 'docker rm -f %EFFECTIVE_DEPLOY_CONTAINER_NAME% >NUL 2>&1'
 
                         def preferredRunStatus = bat(
@@ -260,7 +278,7 @@ pipeline {
                         }
 
                         env.EFFECTIVE_DEPLOYED_PORT = bat(
-                            script: 'powershell -NoProfile -Command "$m = docker port %EFFECTIVE_DEPLOY_CONTAINER_NAME% 80/tcp | Select-Object -First 1; if (-not $m) { exit 1 }; ($m.Split([char]58)[-1]).Trim()"',
+                            script: '@powershell -NoProfile -Command "$m = docker port %EFFECTIVE_DEPLOY_CONTAINER_NAME% 80/tcp | Select-Object -First 1; if (-not $m) { exit 1 }; ($m.Split([char]58)[-1]).Trim()"',
                             returnStdout: true
                         ).trim()
                     }
